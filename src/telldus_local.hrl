@@ -1,6 +1,6 @@
 %% service_info
 %% Information of the servie
--record(state, {}).
+-record(state, {dns_info,dns_addr}).
 %%
 
 -define(SWITCH_CMD_DELAY,3*1000).

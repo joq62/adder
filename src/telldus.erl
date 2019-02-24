@@ -12,6 +12,11 @@
 %% Include files
 %% --------------------------------------------------------------------
 -include("telldus/src/telldus_local.hrl").
+
+-include("../include/tcp.hrl").
+-include("../include/dns.hrl").
+-include("../include/data.hrl").
+-include("../include/dns_data.hrl").
 %% --------------------------------------------------------------------
 
 
@@ -20,9 +25,16 @@
 	 get_all_info/0,
 	 switch/2,
 	 get_sensor_value/1,
-	 tick/0,
-	 start/0,
-	 stop/0]).
+	 tick/0
+	]).
+
+
+-export([start/0,
+	 stop/0,
+	 heart_beat/0
+	]).
+
+
 %% gen_server callbacks
 -export([init/1, handle_call/3,handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
@@ -31,6 +43,10 @@
 %% ====================================================================
 start()-> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 stop()-> gen_server:call(?MODULE, {stop},infinity).
+
+heart_beat()->
+    gen_server:call(?MODULE, {heart_beat},5000).
+
 
 tick()->
     gen_server:cast(?MODULE, {tick}).
@@ -59,10 +75,24 @@ get_sensor_value(Id)->
 %%          {stop, Reason}
 %% --------------------------------------------------------------------
 init([]) ->
-    []=os:cmd(?OSCMD_RESTART),
+    io:format(" ~p~n",[{?MODULE,?LINE, os:cmd(?OSCMD_RESTART)}]),
     timer:sleep(?SWITCH_CMD_DELAY),
+    {ok,MyIp}=application:get_env(ip_addr),
+    {ok,Port}=application:get_env(port),
+  %  {ok,ApplicationId}=application:get_env(application_id),
+    {ok,DnsIp}=application:get_env(dns_ip_addr),
+    {ok,DnsPort}=application:get_env(dns_port),
+    {ok,ExportedServices}=application:get_env(exported_services),
+
+    
+    DnsInfo=[#dns_info{time_stamp="not_initiaded_time_stamp",
+			service_id = ServiceId,
+			ip_addr=MyIp,
+			port=Port
+		       }||ServiceId<-ExportedServices],
+    spawn(fun()-> local_heart_beat(?HEARTBEAT_INTERVAL) end), 
     io:format(" ~p~n",[{?MODULE,started}]),
-   {ok, #state{}}.
+    {ok, #state{dns_info=DnsInfo,dns_addr={dns,DnsIp,DnsPort}}}.  
 
 %% --------------------------------------------------------------------
 %% Function: handle_call/3
@@ -84,11 +114,13 @@ handle_call({restart}, _From, State) ->
     {reply, Reply, State};
 
 handle_call({switch,on,Id}, _From, State) ->
+    io:format("switch,on,Id ~p~n",[{?MODULE,?LINE, Id}]),
     Reply=os:cmd(?OSCMD_SWITCH_ON(Id)),
     timer:sleep(?SWITCH_CMD_DELAY),
     {reply, Reply, State};
 
 handle_call({switch,off,Id}, _From, State) ->
+    io:format("switch,off,Id ~p~n",[{?MODULE,?LINE, Id}]),
     Reply=os:cmd(?OSCMD_SWITCH_OFF(Id)),
     timer:sleep(?SWITCH_CMD_DELAY),
     {reply, Reply, State};
@@ -105,6 +137,11 @@ handle_call({get_sensor_value,Id}, _From, State) ->
  %   end,    
     {reply, Reply, State};
 
+
+handle_call({heart_beat},_, State) ->
+    {dns,DnsIp,DnsPort}=State#state.dns_addr,
+    [if_dns:cast("dns",{dns,dns_register,[DnsInfo]},{DnsIp,DnsPort})||DnsInfo<-State#state.dns_info],
+    {reply,ok, State};
 
 handle_call({stop}, _From, State) ->
     {stop, normal, shutdown_ok, State};
@@ -174,7 +211,13 @@ read_sensor(SensorName,Pid)->
 %% initates the debase
 %% Returns: non
 %% --------------------------------------------------------------------
+local_heart_beat(Interval)->
+%    io:format(" ~p~n",[{?MODULE,?LINE}]),
+    timer:sleep(100),
+    ?MODULE:heart_beat(),
+    timer:sleep(Interval),
 
+    spawn(fun()-> local_heart_beat(Interval) end).
 %% --------------------------------------------------------------------
 %% Function: tick/1
 %% Description:if needed creates dets file with name ?MODULE, and

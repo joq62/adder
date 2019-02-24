@@ -31,11 +31,11 @@
 %% Returns: non
 %% --------------------------------------------------------------------
 vaermdo_main_kitchen_heater_1(on)->
-    rpc:call(node(),telldus,switch,["on",?vaermdo_main_kitchen_heater_1]);
+    rpc:call(node(),telldus,switch,[on,?vaermdo_main_kitchen_heater_1]);
 vaermdo_main_kitchen_heater_1(off)->
-    rpc:call(node(),telldus,switch,["off",?vaermdo_main_kitchen_heater_1]);
+    rpc:call(node(),telldus,switch,[off,?vaermdo_main_kitchen_heater_1]);
 vaermdo_main_kitchen_heater_1(read)->
-    rpc:call(node(),telldus,switch,["read",?vaermdo_main_kitchen_heater_1]);
+    rpc:call(node(),telldus,switch,[read,?vaermdo_main_kitchen_heater_1]);
 vaermdo_main_kitchen_heater_1(X)->
     {error,[?MODULE,?LINE,'unmatched signal',X]}.
 
