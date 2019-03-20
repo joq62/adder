@@ -84,37 +84,13 @@ crash()->
 %%          {ok, State, Timeout} |
 %%          ignore               |
 %%          {stop, Reason}
-% dict:fetch(oam_rpi3,D1).
-% [{brd_ip_port,"80.216.90.159"},
-% {port,6001},
-% {worker_ip_port,"80.216.90.159"},
-%  {port,6002}]
 %
 %% --------------------------------------------------------------------
 init([]) ->
-    
-    rpc:cast(node(),kubelet,register,[atom_to_list(?MODULE)]),
-
-   % Kubelete sets the env variables when starting the application!
-    % Updates when changed
-    % Glurk ta bort app_start
-    {ok,MyIp}=application:get_env(ip_addr),
-    {ok,Port}=application:get_env(port),
-  %  {ok,ApplicationId}=application:get_env(application_id),
-    {ok,DnsIp}=application:get_env(dns_ip_addr),
-    {ok,DnsPort}=application:get_env(dns_port),
-    {ok,ExportedServices}=application:get_env(exported_services),
-
-    
-    DnsInfo=[#dns_info{time_stamp="not_initiaded_time_stamp",
-			service_id = ServiceId,
-			ip_addr=MyIp,
-			port=Port
-		       }||ServiceId<-ExportedServices],
-
     spawn(fun()-> local_heart_beat(?HEARTBEAT_INTERVAL) end), 
     io:format("Service ~p~n",[{?MODULE, 'started ',?LINE}]),
-    {ok, #state{dns_info=DnsInfo,dns_addr={dns,DnsIp,DnsPort}}}.   
+    kubelet:send("kubelet",?Register(atom_to_list(?MODULE))),
+    {ok, #state{}}.   
     
 %% --------------------------------------------------------------------
 %% Function: handle_call/3
@@ -138,25 +114,15 @@ handle_call({crash}, _From, State) ->
 
 
 handle_call({heart_beat},_, State) ->
-    DnsInfo=State#state.dns_info,
-    {dns,DnsIp,DnsPort}=State#state.dns_addr,
-%    [if_dns:cast("dns",{dns,dns_register,[DnsInfo]},{DnsIp,DnsPort})||DnsInfo<-State#state.dns_info],
-    io:format("kubelet,register, ~p~n",[{?MODULE,?LINE,atom_to_list(?MODULE)}]),
     kubelet:send("kubelet",?Register(atom_to_list(?MODULE))),   
-% rpc:cast(node(),kubelet,register,[atom_to_list(?MODULE)]),
     {reply,ok, State};
 
 handle_call({stop}, _From, State) ->
-    
+    kubelet:send("kubelet",?DeRegister(atom_to_list(?MODULE))),  
     io:format("stop ~p~n",[{?MODULE,?LINE}]),
-    DnsInfo=State#state.dns_info,
-    {dns,DnsIp,DnsPort}=State#state.dns_addr,
-    if_dns:cast("dns",{dns,de_dns_register,[DnsInfo]},{DnsIp,DnsPort}),
     {stop, normal, shutdown_ok, State};
 
 handle_call(Request, From, State) ->
-    DnsInfo=State#state.dns_info,
-    if_log:call(DnsInfo,notification,[?MODULE,?LINE,'unmatched_signal',Request,From]),
     Reply = {unmatched_signal,?MODULE,Request,From},
     {reply, Reply, State}.
 
@@ -192,8 +158,6 @@ handle_info({tcp,_Port,_Bin}, State) ->
 
 
 handle_info(Info, State) ->
-%  DnsInfo=State#state.dns_info,
-%    if_log:call(DnsInfo,notification,[?MODULE,?LINE,'unmatched_signal',Info]),
     io:format("unmatched match info ~p~n",[{?MODULE,?LINE,Info}]),
     {noreply, State}.
 
