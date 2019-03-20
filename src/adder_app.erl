@@ -1,7 +1,7 @@
 %% Author: uabjle
 %% Created: 10 dec 2012
 %% Description: TODO: Add description to application_org
--module(telldus_app).
+-module(adder_app).
 
 -behaviour(application).
 %% --------------------------------------------------------------------
@@ -44,8 +44,8 @@
 %%          {error, Reason}
 %% --------------------------------------------------------------------
 start(_Type, _StartArgs) ->
-    {ok,_}= telldus_sup:start_link().
-%    io:format("~p~n",[{?MODULE,?LINE,Reply}]).
+    {ok,Pid}= adder_sup:start_link(),
+    {ok,Pid}.
 %% --------------------------------------------------------------------
 %% Func: stop/1
 %% Returns: any

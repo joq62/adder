@@ -4,14 +4,15 @@
 %%%
 %%% Created : 10 dec 2012
 %%% -------------------------------------------------------------------
--module(telldus_mm).
+-module(adder_lib).
  
 
 
 %% --------------------------------------------------------------------
 %% Include files
 %% --------------------------------------------------------------------
--include("telldus/src/telldus_local.hrl").
+-include("../include/dns.hrl").
+-include("../include/data.hrl").
 %% --------------------------------------------------------------------
 
 %% External exports
@@ -26,25 +27,16 @@
 %% ====================================================================
 
 %% --------------------------------------------------------------------
-%% Function: switches
+%% Function: 
 %% Description:
 %% Returns: non
 %% --------------------------------------------------------------------
-vaermdo_main_kitchen_heater_1(on)->
-    rpc:call(node(),telldus,switch,[on,?vaermdo_main_kitchen_heater_1]);
-vaermdo_main_kitchen_heater_1(off)->
-    rpc:call(node(),telldus,switch,[off,?vaermdo_main_kitchen_heater_1]);
-vaermdo_main_kitchen_heater_1(read)->
-    rpc:call(node(),telldus,switch,[read,?vaermdo_main_kitchen_heater_1]);
-vaermdo_main_kitchen_heater_1(X)->
-    {error,[?MODULE,?LINE,'unmatched signal',X]}.
 
-
+add(A,B)->
+    A+B.
 %% --------------------------------------------------------------------
-%% Function: temp
+%% Function: 
 %% Description:
 %% Returns: non
 %% --------------------------------------------------------------------
 %filter_events(Key
-
-    

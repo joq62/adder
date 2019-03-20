@@ -1,17 +1,18 @@
 %%% -------------------------------------------------------------------
-%%% Author  : uabjle
-%%% Description : 
-%%% Interface to telldus deamon 
-%%%
+%%% Author  : Joq Erlang
+%%% Description : test application calc
+%%%  
 %%% Created : 10 dec 2012
 %%% -------------------------------------------------------------------
--module(telldus).
--behaviour(gen_server).
+-module(adder).
 
+-behaviour(gen_server).
 %% --------------------------------------------------------------------
 %% Include files
 %% --------------------------------------------------------------------
--include("telldus/src/telldus_local.hrl").
+-include("../interface/if_kubelet.hrl").
+
+-include("adder/src/adder_local.hrl").
 
 -include("../include/tcp.hrl").
 -include("../include/dns.hrl").
@@ -19,49 +20,59 @@
 -include("../include/dns_data.hrl").
 %% --------------------------------------------------------------------
 
+%% --------------------------------------------------------------------
+%% Key Data structures
+%% 
+%% --------------------------------------------------------------------
 
-%% External exports
--export([restart/0,
-	 get_all_info/0,
-	 switch/2,
-	 get_sensor_value/1,
-	 tick/0
+
+%% --------------------------------------------------------------------
+
+
+
+
+-export([add/2,crash/0
 	]).
-
 
 -export([start/0,
 	 stop/0,
 	 heart_beat/0
 	]).
 
-
 %% gen_server callbacks
 -export([init/1, handle_call/3,handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+
 
 %% ====================================================================
 %% External functions
 %% ====================================================================
+
+%% Asynchrounus Signals
+
+
+
+%% Gen server functions
+
 start()-> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 stop()-> gen_server:call(?MODULE, {stop},infinity).
 
+
+
+%%-----------------------------------------------------------------------
 heart_beat()->
     gen_server:call(?MODULE, {heart_beat},5000).
 
 
-tick()->
-    gen_server:cast(?MODULE, {tick}).
-restart()->
-      gen_server:call(?MODULE, {restart},infinity).  
-get_all_info()->
-    gen_server:call(?MODULE, {get_all_info},infinity).
 
-switch(on,Id)->
-    gen_server:call(?MODULE, {switch,on,Id},infinity);
-switch(off,Id)->
-    gen_server:call(?MODULE, {switch,off,Id},infinity).
+add(A,B)->
+    gen_server:call(?MODULE, {add,A,B},infinity).
 
-get_sensor_value(Id)->
-    gen_server:call(?MODULE, {get_sensor_value,Id},infinity).
+crash()->
+    gen_server:call(?MODULE, {crash},infinity).
+
+%%-----------------------------------------------------------------------
+
+
 %% ====================================================================
 %% Server functions
 %% ====================================================================
@@ -73,10 +84,20 @@ get_sensor_value(Id)->
 %%          {ok, State, Timeout} |
 %%          ignore               |
 %%          {stop, Reason}
+% dict:fetch(oam_rpi3,D1).
+% [{brd_ip_port,"80.216.90.159"},
+% {port,6001},
+% {worker_ip_port,"80.216.90.159"},
+%  {port,6002}]
+%
 %% --------------------------------------------------------------------
 init([]) ->
-    io:format(" ~p~n",[{?MODULE,?LINE, os:cmd(?OSCMD_RESTART)}]),
-    timer:sleep(?SWITCH_CMD_DELAY),
+    
+    rpc:cast(node(),kubelet,register,[atom_to_list(?MODULE)]),
+
+   % Kubelete sets the env variables when starting the application!
+    % Updates when changed
+    % Glurk ta bort app_start
     {ok,MyIp}=application:get_env(ip_addr),
     {ok,Port}=application:get_env(port),
   %  {ok,ApplicationId}=application:get_env(application_id),
@@ -90,10 +111,11 @@ init([]) ->
 			ip_addr=MyIp,
 			port=Port
 		       }||ServiceId<-ExportedServices],
-    spawn(fun()-> local_heart_beat(?HEARTBEAT_INTERVAL) end), 
-    io:format(" ~p~n",[{?MODULE,started}]),
-    {ok, #state{dns_info=DnsInfo,dns_addr={dns,DnsIp,DnsPort}}}.  
 
+    spawn(fun()-> local_heart_beat(?HEARTBEAT_INTERVAL) end), 
+    io:format("Service ~p~n",[{?MODULE, 'started ',?LINE}]),
+    {ok, #state{dns_info=DnsInfo,dns_addr={dns,DnsIp,DnsPort}}}.   
+    
 %% --------------------------------------------------------------------
 %% Function: handle_call/3
 %% Description: Handling call messages
@@ -104,49 +126,37 @@ init([]) ->
 %%          {stop, Reason, Reply, State}   | (terminate/2 is called)
 %%          {stop, Reason, State}            (terminate/2 is called)
 %% --------------------------------------------------------------------
-handle_call({restart}, _From, State) ->
-    Reply=case os:cmd(?OSCMD_RESTART) of
-	      []->
-		  ok;
-	      Err->
-		  {error,[?MODULE,?LINE,Err]}
-	  end,
+
+handle_call({add,A,B}, _From, State) ->
+    Reply=rpc:call(node(),adder_lib,add,[A,B]),
     {reply, Reply, State};
 
-handle_call({switch,on,Id}, _From, State) ->
-    io:format("switch,on,Id ~p~n",[{?MODULE,?LINE, Id}]),
-    Reply=os:cmd(?OSCMD_SWITCH_ON(Id)),
-    timer:sleep(?SWITCH_CMD_DELAY),
-    {reply, Reply, State};
-
-handle_call({switch,off,Id}, _From, State) ->
-    io:format("switch,off,Id ~p~n",[{?MODULE,?LINE, Id}]),
-    Reply=os:cmd(?OSCMD_SWITCH_OFF(Id)),
-    timer:sleep(?SWITCH_CMD_DELAY),
-    {reply, Reply, State};
-
-handle_call({get_sensor_value,Id}, _From, State) ->
-    Reply=glurk,
- %   Pid_ctrl=self(),
- %   Pid_sensor=spawn(fun()->read_sensor(Id,Pid_ctrl) end),
- %   receive
-%	{Pid_sensor,{Temp}}->
-%	    Reply=Temp
- %   after ?INDOOR_TEMP_TIMOUT->
-%	    Reply= "No temp info"
- %   end,    
+handle_call({crash}, _From, State) ->
+    A=0,
+    Reply=1/A,
     {reply, Reply, State};
 
 
 handle_call({heart_beat},_, State) ->
+    DnsInfo=State#state.dns_info,
     {dns,DnsIp,DnsPort}=State#state.dns_addr,
-    [if_dns:cast("dns",{dns,dns_register,[DnsInfo]},{DnsIp,DnsPort})||DnsInfo<-State#state.dns_info],
+%    [if_dns:cast("dns",{dns,dns_register,[DnsInfo]},{DnsIp,DnsPort})||DnsInfo<-State#state.dns_info],
+    io:format("kubelet,register, ~p~n",[{?MODULE,?LINE,atom_to_list(?MODULE)}]),
+    kubelet:send("kubelet",?Register(atom_to_list(?MODULE))),   
+% rpc:cast(node(),kubelet,register,[atom_to_list(?MODULE)]),
     {reply,ok, State};
 
 handle_call({stop}, _From, State) ->
+    
+    io:format("stop ~p~n",[{?MODULE,?LINE}]),
+    DnsInfo=State#state.dns_info,
+    {dns,DnsIp,DnsPort}=State#state.dns_addr,
+    if_dns:cast("dns",{dns,de_dns_register,[DnsInfo]},{DnsIp,DnsPort}),
     {stop, normal, shutdown_ok, State};
 
 handle_call(Request, From, State) ->
+    DnsInfo=State#state.dns_info,
+    if_log:call(DnsInfo,notification,[?MODULE,?LINE,'unmatched_signal',Request,From]),
     Reply = {unmatched_signal,?MODULE,Request,From},
     {reply, Reply, State}.
 
@@ -158,8 +168,10 @@ handle_call(Request, From, State) ->
 %%          {stop, Reason, State}            (terminate/2 is called)
 %% --------------------------------------------------------------------
 
+
+
 handle_cast(Msg, State) ->
-    io:format("unmatched match cast ~p~n",[{Msg,?MODULE,time()}]),
+    io:format("unmatched match cast ~p~n",[{?MODULE,?LINE,Msg}]),
     {noreply, State}.
 
 %% --------------------------------------------------------------------
@@ -169,8 +181,22 @@ handle_cast(Msg, State) ->
 %%          {noreply, State, Timeout} |
 %%          {stop, Reason, State}            (terminate/2 is called)
 %% --------------------------------------------------------------------
-handle_info(_Info, State) ->
+
+handle_info({tcp_closed,_Port}, State) ->
+  %  io:format("unmatched signal ~p~n",[{?MODULE,?LINE,tcp,Port,binary_to_term(Bin)}]),
+    {noreply, State};
+
+handle_info({tcp,_Port,_Bin}, State) ->
+  %  io:format("unmatched signal ~p~n",[{?MODULE,?LINE,tcp,Port,binary_to_term(Bin)}]),
+    {noreply, State};
+
+
+handle_info(Info, State) ->
+%  DnsInfo=State#state.dns_info,
+%    if_log:call(DnsInfo,notification,[?MODULE,?LINE,'unmatched_signal',Info]),
+    io:format("unmatched match info ~p~n",[{?MODULE,?LINE,Info}]),
     {noreply, State}.
+
 
 %% --------------------------------------------------------------------
 %% Function: terminate/2
@@ -191,24 +217,21 @@ code_change(_OldVsn, State, _Extra) ->
 %% --------------------------------------------------------------------
 %%% Internal functions
 %% --------------------------------------------------------------------
-
-read_sensor(SensorName,Pid)->
-    Reply=glurk,
-  %  io:format("read_sensor ~p~n",[{time(),?MODULE,?LINE}]),
-   % {ok,Str}=?CALL_TELLDUS({get_all_info}),
- %   Str=os:cmd("tdtool --list"),
-  %  P1=string:str(Str,SensorName),   
-  %  S1=string:substr(Str,P1,string:len(SensorName)+15),
-   % [_Sensor,ActualTemp,_Hum]=string:tokens(S1,"\n\t "),
-   % S11=string:tokens(ActualTemp,"."),
-   % [Temp|_R]=S11,
-    %io:format("Temp ~p~n",[{time(),?MODULE,?LINE,Temp}]),
-   % Pid!{self(),{Temp}}.
-    ok.
 %% --------------------------------------------------------------------
-%% Function: tick/1
-%% Description:if needed creates dets file with name ?MODULE, and
-%% initates the debase
+%% Function: 
+%% Description:
+%% Returns: non
+%% --------------------------------------------------------------------
+
+
+%% --------------------------------------------------------------------
+%% Internal functions
+%% --------------------------------------------------------------------
+    
+
+%% --------------------------------------------------------------------
+%% Function: 
+%% Description:
 %% Returns: non
 %% --------------------------------------------------------------------
 local_heart_beat(Interval)->
@@ -216,12 +239,10 @@ local_heart_beat(Interval)->
     timer:sleep(100),
     ?MODULE:heart_beat(),
     timer:sleep(Interval),
-
     spawn(fun()-> local_heart_beat(Interval) end).
 %% --------------------------------------------------------------------
-%% Function: tick/1
-%% Description:if needed creates dets file with name ?MODULE, and
-%% initates the debase
+%% Function: 
+%% Description:
 %% Returns: non
 %% --------------------------------------------------------------------
 
