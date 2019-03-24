@@ -11,6 +11,7 @@
 %% Include files
 %% --------------------------------------------------------------------
 -include("../interface/if_kubelet.hrl").
+-include("../interface/if_monitor.hrl").
 
 -include("adder/src/adder_local.hrl").
 
@@ -100,11 +101,15 @@ init([]) ->
 %%          {noreply, State}               |
 %%          {noreply, State, Timeout}      |
 %%          {stop, Reason, Reply, State}   | (terminate/2 is called)
-%%          {stop, Reason, State}            (terminate/2 is called)
+%%          {stop, Reason, State}            (aterminate/2 is called)
 %% --------------------------------------------------------------------
 
 handle_call({add,A,B}, _From, State) ->
-    Reply=rpc:call(node(),adder_lib,add,[A,B]),
+    {ok,App}=application:get_application(),
+    AppLogMsg={atom_to_list(App),?MODULE,?LINE,{info,7,['request add ',A,B]}},
+    Reply=kubelet:log(AppLogMsg),
+   % Reply=rpc:call(node(),adder_lib,add,[A,B]),
+    AppLogMsg={atom_to_list(App),?MODULE,?LINE,{info,7,['result  add ',A,B," = ", Reply]}},
     {reply, Reply, State};
 
 handle_call({crash}, _From, State) ->
