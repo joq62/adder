@@ -9,9 +9,6 @@ all:
 	rebar3 compile;
 	mkdir ebin;
 #	Included services
-	cp _build/default/lib/cmn_service/ebin/* ebin;
-	cp _build/default/lib/sd_service/ebin/* ebin;
-	cp _build/default/lib/log_service/ebin/* ebin;
 #	Included application
 	cp _build/default/lib/adder/ebin/* ebin;
 	rm -rf _build*;
