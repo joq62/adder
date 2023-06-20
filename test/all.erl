@@ -49,8 +49,5 @@ setup()->
   
     ok=application:start(adder),
     pong=adder:ping(),
-    pong=common:ping(),
-    pong=sd:ping(),
-    pong=log:ping(),
-
+    kuk=sd:call(adder,adder,add,[20,22],5000),
     ok.

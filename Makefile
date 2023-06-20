@@ -9,6 +9,7 @@ all:
 	rebar3 compile;
 	mkdir ebin;
 #	Included services
+	cp _build/default/lib/lib_sd/ebin/* ebin;
 #	Included application
 	cp _build/default/lib/adder/ebin/* ebin;
 	rm -rf _build*;
@@ -62,16 +63,13 @@ eunit:
 	rebar3 compile;
 	mkdir ebin;
 #	Included services
-	cp _build/default/lib/cmn_service/ebin/* ebin;
-	cp _build/default/lib/sd_service/ebin/* ebin;
-	cp _build/default/lib/log_service/ebin/* ebin;
+	cp _build/default/lib/lib_sd/ebin/* ebin;
 #	Included application
 	cp _build/default/lib/adder/ebin/* ebin;
 	rm -rf _build*;
 	mkdir test_ebin;
-	erlc -I api -I /home/joq62/erlang/infra/api_repo -o test_ebin test/*.erl;
+	erlc -o test_ebin test/*.erl;
 	erl -pa ebin\
 	    -pa test_ebin\
-	    -config config/sys.config\
 	    -sname do_test -run $(m) start\
-	    -setcookie $(c)
+	    -setcookie test_cookie
