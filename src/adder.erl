@@ -11,6 +11,8 @@
 -behaviour(gen_server).
 
 -include("log.api").
+-define(LocalResourceTuples,[{adder,node()}]).
+-define(TargetTypes,[]). 
 
 %% API
 -export([
@@ -68,6 +70,10 @@ start_link() ->
 %% @end
 %%--------------------------------------------------------------------
 init([]) ->
+     %% Announce to resource_discovery
+    [rd:add_local_resource(ResourceType,Resource)||{ResourceType,Resource}<-?LocalResourceTuples],
+    [rd:add_target_resource_type(TargetType)||TargetType<-?TargetTypes],
+    rd:trade_resources(),
     ?LOG_NOTICE("Server started ",[]),
     {ok, #state{}}.
 
