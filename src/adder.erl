@@ -11,7 +11,7 @@
 -behaviour(gen_server).
 
 -include("log.api").
--define(LocalResourceTuples,[{node(),adder}]).
+-define(LocalResourceTuples,[{adder,node()}]).
 -define(TargetTypes,[]). 
 
 %% API
