@@ -28,11 +28,24 @@ start()->
     ok=dependent_apps:start(),
     ok=setup(),
     ok=test1(),
+    ok=test2(),
+    
 
 
     io:format("Test OK !!! ~p~n",[?MODULE]),
-    timer:sleep(3000),
+    timer:sleep(5000),
     init:stop(),
+    ok.
+
+%% --------------------------------------------------------------------
+%% Function: available_hosts()
+%% Description: Based on hosts.config file checks which hosts are avaible
+%% Returns: List({HostId,Ip,SshPort,Uid,Pwd}
+%% --------------------------------------------------------------------
+test2()->    
+    io:format("Start ~p~n",[{?MODULE,?FUNCTION_NAME}]),
+    1022=adder:add(1000,22),
+
     ok.
 
 %% --------------------------------------------------------------------
