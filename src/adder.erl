@@ -16,6 +16,7 @@
 %% API
 -export([
 	 add/2,
+	 kill/0,
 	 ping/0
 	]).
 
@@ -34,12 +35,16 @@
 %%%===================================================================
 %%--------------------------------------------------------------------
 %% @doc
-%% @spec
+%% 
 %% @end
 %%--------------------------------------------------------------------
 
 add(A,B) ->
     gen_server:call(?SERVER,{add,A,B},infinity).
+
+kill() ->
+    gen_server:cast(?SERVER,{}).
+
 ping() ->
     gen_server:call(?SERVER,{ping},infinity).
 
@@ -108,6 +113,12 @@ handle_call(Request, _From, State) ->
 	  {noreply, NewState :: term(), Timeout :: timeout()} |
 	  {noreply, NewState :: term(), hibernate} |
 	  {stop, Reason :: term(), NewState :: term()}.
+handle_cast(kill, State) ->
+    A=crash,
+    glurk=A,
+    
+    {noreply, State};
+
 handle_cast(_Request, State) ->
     {noreply, State}.
 
