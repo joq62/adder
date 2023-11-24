@@ -43,7 +43,7 @@ add(A,B) ->
     gen_server:call(?SERVER,{add,A,B},infinity).
 
 kill() ->
-    gen_server:cast(?SERVER,{}).
+    gen_server:call(?SERVER,{kill},infinity).
 
 ping() ->
     gen_server:call(?SERVER,{ping},infinity).
@@ -94,6 +94,12 @@ init([]) ->
 handle_call({add,A,B}, _From, State) ->
     Reply = A+B,
     {reply, Reply, State};
+
+handle_call({kill}, _From, State) ->
+    glurk=?MODULE,
+    Reply =pong,
+    {reply, Reply, State};
+
 handle_call({ping}, _From, State) ->
     Reply =pong,
     {reply, Reply, State};

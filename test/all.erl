@@ -44,7 +44,7 @@ start()->
 %% --------------------------------------------------------------------
 test2()->    
     io:format("Start ~p~n",[{?MODULE,?FUNCTION_NAME}]),
-    1022=adder:add(1000,22),
+    ok=adder:kill(),
 
     ok.
 
