@@ -25,7 +25,6 @@
 %% --------------------------------------------------------------------
 start()->
    
-    ok=dependent_apps:start(),
     ok=setup(),
     ok=test1(),
     ok=test2(),
@@ -44,9 +43,7 @@ start()->
 %% --------------------------------------------------------------------
 test2()->    
     io:format("Start ~p~n",[{?MODULE,?FUNCTION_NAME}]),
-    ok=adder:kill(),
-
-    ok.
+  ok.
 
 %% --------------------------------------------------------------------
 %% Function: available_hosts()
@@ -55,8 +52,39 @@ test2()->
 %% --------------------------------------------------------------------
 test1()->    
     io:format("Start ~p~n",[{?MODULE,?FUNCTION_NAME}]),
-    42=adder:add(20,22),
 
+    {badrpc,{'EXIT',{badarith,_}}}=rpc:call(node(),adder,divi,[2,0],5000),
+    {badrpc,{'EXIT',{undef,[{glurk,glurk,[2,0],[]}]}}}=rpc:call(node(),glurk,glurk,[2,0],5000),
+    {badrpc,{'EXIT',{noproc,{gen_server,call,[adder,{add,2,0},infinity]}}}}=rpc:call(node(),adder,add,[2,0],5000),
+    ok=application:start(adder),
+    pong=adder:ping(),
+    {badrpc,{'EXIT',_}}=rpc:call(node(),adder,add,[m,0],5000),
+    {badrpc,{'EXIT',{undef,[{adder,add,[1,2,0],[]}]}}}=rpc:call(node(),adder,add,[1,2,0],5000),
+    {badrpc,timeout}=rpc:call(node(),adder,add,[1,2,0],0),
+
+    %% 
+    ok=application:stop(adder), 
+    {badrpc,{'EXIT',Reason1}}=rpc:call(node(),adder,divi,[2,0],5000),
+    {badrpc,{'EXIT',Reason2}}=rpc:call(node(),glurk,glurk,[2,0],5000),
+    {badrpc,{'EXIT',Reason3}}=rpc:call(node(),adder,add,[2,0],5000),
+    ok=application:start(adder),
+    pong=adder:ping(),
+    {badrpc,{'EXIT',Reason4}}=rpc:call(node(),adder,add,[m,0],5000),
+    {badrpc,{'EXIT',Reason5}}=rpc:call(node(),adder,add,[1,2,0],5000),
+    {badrpc,timeout}=rpc:call(node(),adder,add,[1,2,0],0),
+
+    %% cast
+    ok=application:stop(adder), 
+    true=rpc:cast(node(),adder,divi,[2,0]),
+    true=rpc:cast(node(),glurk,glurk,[2,0]),
+    true=rpc:cast(node(),adder,add,[2,0]),
+    ok=application:start(adder),
+    pong=adder:ping(),
+    true=rpc:cast(node(),adder,add,[m,0]),
+    true=rpc:cast(node(),adder,add,[1,2,0]),
+ 
+    io:format("Start ~p~n",[{Reason1,Reason2,Reason3,Reason4,Reason5,?MODULE,?FUNCTION_NAME}]),
+    
     ok.
 %% --------------------------------------------------------------------
 %% Function: available_hosts()
@@ -66,6 +94,7 @@ test1()->
 setup()->
     io:format("Start ~p~n",[{?MODULE,?FUNCTION_NAME}]),
   
-    ok=application:start(adder),
-    pong=adder:ping(),
+    ok=application:start(log),
+    ok=application:start(rd),
+
     ok.

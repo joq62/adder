@@ -4,22 +4,13 @@
 %%% @doc
 %%%
 %%% @end
-%%% Created : 27 Apr 2023 by c50 <joq62@c50>
+%%% Created :  3 Dec 2023 by c50 <joq62@c50>
 %%%-------------------------------------------------------------------
--module(adder).
+-module(kuk).
 
 -behaviour(gen_server).
 
--include("log.api").
--include("adder.resource_discovery").
-
 %% API
--export([
-	 add/2,
-	 kill/0,
-	 ping/0
-	]).
-
 -export([start_link/0]).
 
 %% gen_server callbacks
@@ -36,21 +27,6 @@
 
 %%--------------------------------------------------------------------
 %% @doc
-%% 
-%% @end
-%%--------------------------------------------------------------------
-
-add(A,B) ->
-    gen_server:call(?SERVER,{add,A,B},infinity).
-
-kill() ->
-    gen_server:call(?SERVER,{kill},infinity).
-
-ping() ->
-    gen_server:call(?SERVER,{ping},infinity).
-
-%%--------------------------------------------------------------------
-%% @doc
 %% Starts the server
 %% @end
 %%--------------------------------------------------------------------
@@ -60,9 +36,6 @@ ping() ->
 	  ignore.
 start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
-
-
-
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -74,18 +47,13 @@ start_link() ->
 %% Initializes the server
 %% @end
 %%--------------------------------------------------------------------
+-spec init(Args :: term()) -> {ok, State :: term()} |
+	  {ok, State :: term(), Timeout :: timeout()} |
+	  {ok, State :: term(), hibernate} |
+	  {stop, Reason :: term()} |
+	  ignore.
 init([]) ->
-
     process_flag(trap_exit, true),
-
-    %% Announce to resource_discovery
-    [rd:add_local_resource(ResourceType,Resource)||{ResourceType,Resource}<-?LocalResourceTuples],
-    [rd:add_target_resource_type(TargetType)||TargetType<-?TargetTypes],
-    rd:trade_resources(),
-    ?LOG_NOTICE("Server started ",[]),
-    
-
-
     {ok, #state{}}.
 
 %%--------------------------------------------------------------------
@@ -94,21 +62,17 @@ init([]) ->
 %% Handling call messages
 %% @end
 %%--------------------------------------------------------------------
-handle_call({add,A,B}, _From, State) ->
-    Reply = A+B,
-    {reply, Reply, State};
-
-handle_call({kill}, _From, State) ->
-    glurk=?MODULE,
-    Reply =pong,
-    {reply, Reply, State};
-
-handle_call({ping}, _From, State) ->
-    Reply =pong,
-    {reply, Reply, State};
-
-handle_call(Request, _From, State) ->
-    Reply = {error,[unmatched_signal,Request]},
+-spec handle_call(Request :: term(), From :: {pid(), term()}, State :: term()) ->
+	  {reply, Reply :: term(), NewState :: term()} |
+	  {reply, Reply :: term(), NewState :: term(), Timeout :: timeout()} |
+	  {reply, Reply :: term(), NewState :: term(), hibernate} |
+	  {noreply, NewState :: term()} |
+	  {noreply, NewState :: term(), Timeout :: timeout()} |
+	  {noreply, NewState :: term(), hibernate} |
+	  {stop, Reason :: term(), Reply :: term(), NewState :: term()} |
+	  {stop, Reason :: term(), NewState :: term()}.
+handle_call(_Request, _From, State) ->
+    Reply = ok,
     {reply, Reply, State}.
 
 %%--------------------------------------------------------------------
@@ -122,12 +86,6 @@ handle_call(Request, _From, State) ->
 	  {noreply, NewState :: term(), Timeout :: timeout()} |
 	  {noreply, NewState :: term(), hibernate} |
 	  {stop, Reason :: term(), NewState :: term()}.
-handle_cast(kill, State) ->
-    A=crash,
-    glurk=A,
-    
-    {noreply, State};
-
 handle_cast(_Request, State) ->
     {noreply, State}.
 
