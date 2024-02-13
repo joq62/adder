@@ -4,7 +4,7 @@ all:
 	rm -rf *.dir;
 	rm -rf _build;
 	rm -rf logs;
-	rm -rf ebin
+	rm -rf ebin;
 	rm -rf rebar.lock;
 #	mkdir ebin;		
 	rebar3 compile;	
