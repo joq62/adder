@@ -7,7 +7,7 @@
 %%% Created : 27 Apr 2023 by c50 <joq62@c50>
 %%%-------------------------------------------------------------------
 -module(adder).
-
+ 
 -behaviour(gen_server).
 
 -include("log.api").
