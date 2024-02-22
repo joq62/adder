@@ -20,7 +20,8 @@
 	 ping/0
 	]).
 
--export([start_link/0]).
+-export([start_link/0,
+	 stop/0]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -48,6 +49,9 @@ kill() ->
 
 ping() ->
     gen_server:call(?SERVER,{ping},infinity).
+
+stop() ->
+    gen_server:cast(?SERVER,{stop}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -123,11 +127,8 @@ handle_call(Request, _From, State) ->
 	  {noreply, NewState :: term(), Timeout :: timeout()} |
 	  {noreply, NewState :: term(), hibernate} |
 	  {stop, Reason :: term(), NewState :: term()}.
-handle_cast(kill, State) ->
-    A=crash,
-    glurk=A,
-    
-    {noreply, State};
+handle_cast({stop}, State) ->
+    {stop,normal,ok,State};
 
 handle_cast(_Request, State) ->
     {noreply, State}.
