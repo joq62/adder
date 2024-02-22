@@ -51,7 +51,7 @@ ping() ->
     gen_server:call(?SERVER,{ping},infinity).
 
 stop() ->
-    gen_server:cast(?SERVER,{stop}).
+    gen_server:stop(?SERVER).
 
 %%--------------------------------------------------------------------
 %% @doc
