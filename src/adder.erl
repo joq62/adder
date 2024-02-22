@@ -144,7 +144,8 @@ handle_cast(_Request, State) ->
 	  {noreply, NewState :: term(), Timeout :: timeout()} |
 	  {noreply, NewState :: term(), hibernate} |
 	  {stop, Reason :: normal | term(), NewState :: term()}.
-handle_info(_Info, State) ->
+handle_info(Info, State) ->
+    io:format("unmatched_signal ~p~n",[{Info,?MODULE,?LINE}]),
     {noreply, State}.
 
 %%--------------------------------------------------------------------
