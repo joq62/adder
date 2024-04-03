@@ -1,10 +1,10 @@
-{application,adder,
+{application,log,
              [{description,"An OTP application"},
               {vsn,"0.1.0"},
               {registered,[]},
-              {mod,{adder_app,[]}},
+              {mod,{log_app,[]}},
               {applications,[kernel,stdlib]},
               {env,[]},
-              {modules,[adder_app,adder_sup]},
+              {modules,[lib_log,log,log_app,log_server,log_sup]},
               {licenses,["Apache-2.0"]},
               {links,[]}]}.

@@ -26,8 +26,8 @@
 start()->
    
     ok=setup(),
-    ok=test1(),
-    ok=test2(),
+   % ok=test1(),
+   % ok=test2(),
     
 
 
@@ -94,7 +94,10 @@ test1()->
 setup()->
     io:format("Start ~p~n",[{?MODULE,?FUNCTION_NAME}]),
   
-    ok=application:start(log),
-    ok=application:start(rd),
+    ok=application:start(adder), 
+    pong=log:ping(),
+    pong=rd:ping(),
+    pong=adder:ping(),
 
+    42=adder:add(20,22),
     ok.
